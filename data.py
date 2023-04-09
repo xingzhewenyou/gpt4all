@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader
 from transformers import DefaultDataCollator
 
 
-
 def tokenize_inputs(config, tokenizer, examples):
     max_length = config["max_length"]
     input_ids = torch.full((len(examples["prompt"]), max_length), tokenizer.pad_token_id)
@@ -15,14 +14,16 @@ def tokenize_inputs(config, tokenizer, examples):
 
     out = {"labels": [], "attention_mask": []}
     for i, (prompt, response) in enumerate(zip(examples["prompt"], examples["response"])):
-        input_tokens = tokenizer(prompt, truncation=True, max_length=max_length // 2, return_tensors="pt")["input_ids"].squeeze()
+        input_tokens = tokenizer(prompt, truncation=True, max_length=max_length // 2, return_tensors="pt")[
+            "input_ids"].squeeze()
         input_len = len(input_tokens)
 
         # plus one since we remove bos from response
         # but we subtract one since we want to add eos token
         remaining_tokens = max_length - input_len - len(newline_tokens) + 1
         # remove bos
-        target_tokens = tokenizer(response, truncation=True, max_length=remaining_tokens, return_tensors="pt")["input_ids"].squeeze()[1:]
+        target_tokens = tokenizer(response, truncation=True, max_length=remaining_tokens, return_tensors="pt")[
+                            "input_ids"].squeeze()[1:]
 
         input_ids[i, :input_len] = input_tokens
         # add newline between prompt and response

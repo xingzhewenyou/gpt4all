@@ -1,5 +1,5 @@
 import os
-from transformers import AutoModelForCausalLM, AutoTokenizer 
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.trainer_pt_utils import get_parameter_names
 import torch
 import torch.nn as nn
@@ -26,11 +26,11 @@ def evaluate(config, model, val_dataloader):
 
     with torch.no_grad():
         for i, batch in enumerate(
-            tqdm(val_dataloader),
+                tqdm(val_dataloader),
         ):
             if i == config["eval_steps"]:
                 break
-                
+
             loss = model(**batch).loss
 
             loss_values = accelerator.gather_for_metrics({"loss": loss.detach()})
@@ -52,19 +52,17 @@ def train(accelerator, config):
         # these tokens are already in the vocab, just not mapped correctly
         added_tokens = tokenizer.add_special_tokens({"bos_token": "<s>", "eos_token": "</s>", "pad_token": "<pad>"})
 
-        
     with accelerator.main_process_first():
-        train_dataloader, val_dataloader = load_data(config, tokenizer) 
-        
+        train_dataloader, val_dataloader = load_data(config, tokenizer)
 
     checkpoint = config["gradient_checkpointing"]
-    model = AutoModelForCausalLM.from_pretrained(config["model_name"], 
-                                                    use_cache=False if checkpoint else True,
-                                                    trust_remote_code=True) 
+    model = AutoModelForCausalLM.from_pretrained(config["model_name"],
+                                                 use_cache=False if checkpoint else True,
+                                                 trust_remote_code=True)
 
     if added_tokens > 0:
         model.resize_token_embeddings(len(tokenizer))
-    
+
     if checkpoint:
         model.gradient_checkpointing_enable()
 
@@ -79,7 +77,7 @@ def train(accelerator, config):
     optimizer_cls = (
         torch.optim.AdamW
         if accelerator.state.deepspeed_plugin is None
-        or "optimizer" not in accelerator.state.deepspeed_plugin.deepspeed_config
+           or "optimizer" not in accelerator.state.deepspeed_plugin.deepspeed_config
         else DummyOptim
     )
 
@@ -89,11 +87,11 @@ def train(accelerator, config):
 
     # scheduler defined in Deepspeed config
     scheduler = DummyScheduler(
-            optimizer,  warmup_num_steps=config["warmup_steps"],
-        )
+        optimizer, warmup_num_steps=config["warmup_steps"],
+    )
 
     model, optimizer, train_dataloader, val_dataloader, scheduler = accelerator.prepare(
-            model, optimizer, train_dataloader, val_dataloader, scheduler
+        model, optimizer, train_dataloader, val_dataloader, scheduler
     )
 
     # setup for saving training states in case preemption
@@ -145,8 +143,8 @@ def train(accelerator, config):
                 val_loss = evaluate(config, model, val_dataloader)
 
                 log_train = {
-                        "train_loss": train_loss.compute()
-                    }
+                    "train_loss": train_loss.compute()
+                }
                 log_val = {
                     "val_loss": val_loss.compute()
                 }
@@ -168,7 +166,6 @@ def train(accelerator, config):
         if accelerator.is_main_process:
             unwrapped_model.push_to_hub(config["save_name"] + "_first_epoch", private=True)
 
-            
     accelerator.wait_for_everyone()
     unwrapped_model = accelerator.unwrap_model(model)
     unwrapped_model.save_pretrained(
@@ -183,7 +180,6 @@ def train(accelerator, config):
 
     accelerator.end_training()
 
-    
 
 if __name__ == "__main__":
     # parse arguments by reading in a config
