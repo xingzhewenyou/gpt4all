@@ -1,4 +1,6 @@
 <h1 align="center">GPT4All</h1>
+<p align="center">自己新开一个fork分支，想完全复现GPT4all的完整训练过程，数据可以小，适合CPU就行，关键是理解每一步细节</p>
+
 <p align="center">Demo, data, and code to train an assistant-style large language model with ~800k GPT-3.5-Turbo Generations based on LLaMa</p>
 
 <p align="center">
